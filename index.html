@@ -3,11 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AturAja: aplikasi web satu halaman untuk mencatat pengeluaran harian, menyimpan bookmark favorit, dan berlatih lewat kuis interaktif. Dibuat untuk Praktikum 3 PABWE." />
   <title>AturAja — Praktikum 3 PABWE</title>
 
-  <!-- Tailwind CSS (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
+  <!-- Preconnect: mempercepat koneksi ke domain pihak ketiga -->
+  <link rel="preconnect" href="https://cdn.tailwindcss.com" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <!-- Tailwind CSS (CDN) — defer agar tidak render-blocking -->
+  <script src="https://cdn.tailwindcss.com" defer></script>
+  <script defer>
     tailwind.config = {
       theme: {
         extend: {
@@ -20,19 +27,22 @@
     };
   </script>
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
+  <!-- Google Fonts — dimuat non-blocking (preload lalu swap ke stylesheet) -->
+  <link rel="preload" as="style"
     href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700&display=swap"
-    rel="stylesheet"
-  />
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Outfit:wght@500;600;700&display=swap" />
+  </noscript>
 
-  <!-- Tabler Icons -->
-  <link
-    rel="stylesheet"
+  <!-- Tabler Icons — dimuat non-blocking -->
+  <link rel="preload" as="style"
     href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
-  />
+    onload="this.onload=null;this.rel='stylesheet'" />
+  <noscript>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  </noscript>
 
   <style>
     body {
@@ -56,25 +66,29 @@
       </p>
     </header>
 
-    <!-- Tab Navigation -->
-    <nav class="flex gap-1 p-1 bg-white/80 border border-slate-200 rounded-xl shadow-sm mb-6" role="tablist">
-      <button type="button" data-tab="expense"
+    <!-- Tab Navigation: pola ARIA Tabs lengkap (tablist > tab, panel > tabpanel) -->
+    <nav class="flex gap-1 p-1 bg-white/80 border border-slate-200 rounded-xl shadow-sm mb-6"
+      role="tablist" aria-label="Navigasi fitur AturAja">
+      <button type="button" id="tab-btn-expense" data-tab="expense" role="tab"
+        aria-selected="true" aria-controls="panel-expense" tabindex="0"
         class="tab-btn flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition
-               bg-emerald-600 text-white shadow" aria-selected="true">
+               bg-emerald-700 text-white shadow">
         <i class="ti ti-wallet text-lg"></i>
         <span class="hidden sm:inline">Pengeluaran</span>
         <span class="sm:hidden">Uang</span>
       </button>
-      <button type="button" data-tab="bookmark"
+      <button type="button" id="tab-btn-bookmark" data-tab="bookmark" role="tab"
+        aria-selected="false" aria-controls="panel-bookmark" tabindex="-1"
         class="tab-btn flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition
-               text-slate-600 hover:bg-slate-100" aria-selected="false">
+               text-slate-600 hover:bg-slate-100">
         <i class="ti ti-bookmark text-lg"></i>
         <span class="hidden sm:inline">Bookmark</span>
         <span class="sm:hidden">Link</span>
       </button>
-      <button type="button" data-tab="quiz"
+      <button type="button" id="tab-btn-quiz" data-tab="quiz" role="tab"
+        aria-selected="false" aria-controls="panel-quiz" tabindex="-1"
         class="tab-btn flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-semibold transition
-               text-slate-600 hover:bg-slate-100" aria-selected="false">
+               text-slate-600 hover:bg-slate-100">
         <i class="ti ti-help-hexagon text-lg"></i>
         <span class="hidden sm:inline">Kuis</span>
         <span class="sm:hidden">Kuis</span>
@@ -83,7 +97,7 @@
 
     <main>
       <!-- ========== TAB 1: EXPENSE TRACKER ========== -->
-      <section id="panel-expense" class="tab-panel space-y-5">
+      <section id="panel-expense" role="tabpanel" aria-labelledby="tab-btn-expense" tabindex="0" class="tab-panel space-y-5">
         <!-- Ringkasan -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
@@ -112,8 +126,79 @@
           <form id="expense-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
             <input type="text" id="expense-title" placeholder="Judul (mis. Makan siang)" required
               class="lg:col-span-2 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            <select id="expense-category"
-              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+
+            <div>
+              <label for="expense-category" class="sr-only">Kategori transaksi</label>
+              <select id="expense-category"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option>Makanan</option>
+                <option>Transportasi</option>
+                <option>Belanja</option>
+                <option>Hiburan</option>
+                <option>Kesehatan</option>
+                <option>Pendidikan</option>
+                <option>Tagihan</option>
+                <option>Lainnya</option>
+              </select>
+            </div>
+
+            <input type="number" id="expense-amount" placeholder="Jumlah (Rp)" min="1" step="1"
+              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+
+            <div>
+              <label for="expense-type" class="sr-only">Tipe transaksi</label>
+              <select id="expense-type"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="Pengeluaran">Pengeluaran</option>
+                <option value="Pemasukan">Pemasukan</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="expense-date" class="sr-only">Tanggal transaksi</label>
+              <input type="date" id="expense-date"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <button type="submit"
+              class="lg:col-span-5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-4 py-2.5 transition">
+              <i class="ti ti-plus"></i> Tambah Transaksi
+            </button>
+          </form>
+
+          <!-- Pencarian, filter & sorting -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div class="relative lg:col-span-2">
+              <label for="expense-search" class="sr-only">Cari transaksi</label>
+              <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="search" id="expense-search" placeholder="Cari judul transaksi..."
+                class="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+            <div>
+              <label for="expense-filter-type" class="sr-only">Filter tipe transaksi</label>
+              <select id="expense-filter-type"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="all">Semua Tipe</option>
+                <option value="Pemasukan">Pemasukan</option>
+                <option value="Pengeluaran">Pengeluaran</option>
+              </select>
+            </div>
+            <div>
+              <label for="expense-sort" class="sr-only">Urutkan transaksi</label>
+              <select id="expense-sort"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="newest">Terbaru</option>
+                <option value="oldest">Terlama</option>
+                <option value="amount-desc">Jumlah Terbesar</option>
+                <option value="amount-asc">Jumlah Terkecil</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="expense-filter-category" class="sr-only">Filter kategori transaksi</label>
+            <select id="expense-filter-category"
+              class="w-full sm:w-64 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              <option value="all">Semua Kategori</option>
               <option>Makanan</option>
               <option>Transportasi</option>
               <option>Belanja</option>
@@ -123,54 +208,7 @@
               <option>Tagihan</option>
               <option>Lainnya</option>
             </select>
-            <input type="number" id="expense-amount" placeholder="Jumlah (Rp)" min="1" step="1"
-              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            <select id="expense-type"
-              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="Pengeluaran">Pengeluaran</option>
-              <option value="Pemasukan">Pemasukan</option>
-            </select>
-            <input type="date" id="expense-date"
-              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            <button type="submit"
-              class="lg:col-span-5 inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2.5 transition">
-              <i class="ti ti-plus"></i> Tambah Transaksi
-            </button>
-          </form>
-
-          <!-- Pencarian, filter & sorting -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <div class="relative lg:col-span-2">
-              <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
-              <input type="search" id="expense-search" placeholder="Cari judul transaksi..."
-                class="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-            </div>
-            <select id="expense-filter-type"
-              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="all">Semua Tipe</option>
-              <option value="Pemasukan">Pemasukan</option>
-              <option value="Pengeluaran">Pengeluaran</option>
-            </select>
-            <select id="expense-sort"
-              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-              <option value="newest">Terbaru</option>
-              <option value="oldest">Terlama</option>
-              <option value="amount-desc">Jumlah Terbesar</option>
-              <option value="amount-asc">Jumlah Terkecil</option>
-            </select>
           </div>
-          <select id="expense-filter-category"
-            class="w-full sm:w-64 rounded-lg border border-slate-300 px-3 py-2.5 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <option value="all">Semua Kategori</option>
-            <option>Makanan</option>
-            <option>Transportasi</option>
-            <option>Belanja</option>
-            <option>Hiburan</option>
-            <option>Kesehatan</option>
-            <option>Pendidikan</option>
-            <option>Tagihan</option>
-            <option>Lainnya</option>
-          </select>
 
           <div id="expense-empty"
             class="hidden rounded-xl border border-amber-200 bg-amber-50 text-amber-900 px-4 py-3 text-sm flex items-start gap-2" role="alert">
@@ -183,7 +221,7 @@
       </section>
 
       <!-- ========== TAB 2: BOOKMARK MANAGER ========== -->
-      <section id="panel-bookmark" class="tab-panel hidden space-y-5">
+      <section id="panel-bookmark" role="tabpanel" aria-labelledby="tab-btn-bookmark" tabindex="0" class="tab-panel hidden space-y-5">
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm">
           <h2 class="font-display text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <i class="ti ti-bookmarks text-sky-600"></i>
@@ -210,7 +248,7 @@
             <input type="text" id="bookmark-note" placeholder="Catatan singkat (opsional)"
               class="sm:col-span-2 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
             <button type="submit"
-              class="sm:col-span-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2.5 transition">
+              class="sm:col-span-2 inline-flex items-center justify-center gap-1.5 rounded-lg bg-sky-700 hover:bg-sky-800 text-white text-sm font-semibold px-4 py-2.5 transition">
               <i class="ti ti-plus"></i> Tambah Bookmark
             </button>
           </form>
@@ -218,16 +256,20 @@
           <!-- Pencarian & sorting -->
           <div class="flex flex-col sm:flex-row gap-3 mb-4">
             <div class="relative flex-1">
+              <label for="bookmark-search" class="sr-only">Cari bookmark</label>
               <i class="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
               <input type="search" id="bookmark-search" placeholder="Cari nama, URL, atau kategori..."
                 class="w-full rounded-lg border border-slate-300 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
             </div>
-            <select id="bookmark-sort"
-              class="rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
-              <option value="newest">Terbaru</option>
-              <option value="title-asc">Judul A–Z</option>
-              <option value="title-desc">Judul Z–A</option>
-            </select>
+            <div>
+              <label for="bookmark-sort" class="sr-only">Urutkan bookmark</label>
+              <select id="bookmark-sort"
+                class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <option value="newest">Terbaru</option>
+                <option value="title-asc">Judul A–Z</option>
+                <option value="title-desc">Judul Z–A</option>
+              </select>
+            </div>
           </div>
 
           <div id="bookmark-empty"
@@ -241,7 +283,7 @@
       </section>
 
       <!-- ========== TAB 3: QUIZ APP ========== -->
-      <section id="panel-quiz" class="tab-panel hidden space-y-5">
+      <section id="panel-quiz" role="tabpanel" aria-labelledby="tab-btn-quiz" tabindex="0" class="tab-panel hidden space-y-5">
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm">
           <h2 class="font-display text-xl font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <i class="ti ti-brain text-violet-600"></i>
@@ -255,7 +297,7 @@
               Skor tertinggi: <span id="quiz-highscore" class="font-semibold text-violet-700">—</span>
             </p>
             <button type="button" id="quiz-start-btn"
-              class="inline-flex items-center gap-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 transition">
+              class="inline-flex items-center gap-2 rounded-lg bg-violet-700 hover:bg-violet-800 text-white text-sm font-semibold px-5 py-2.5 transition">
               <i class="ti ti-player-play"></i> Mulai Kuis
             </button>
           </div>
@@ -270,7 +312,7 @@
             <div id="quiz-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4"></div>
             <div id="quiz-feedback" class="hidden rounded-xl border px-4 py-3 text-sm mb-4"></div>
             <button type="button" id="quiz-next-btn"
-              class="hidden inline-flex items-center gap-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-2.5 transition">
+              class="hidden inline-flex items-center gap-1.5 rounded-lg bg-violet-700 hover:bg-violet-800 text-white text-sm font-semibold px-4 py-2.5 transition">
               Lanjut <i class="ti ti-arrow-right"></i>
             </button>
           </div>
@@ -281,7 +323,7 @@
             <p id="quiz-score" class="font-display text-3xl font-bold text-slate-900 mb-1">0 / 6</p>
             <p id="quiz-highscore-result" class="text-sm text-slate-500 mb-6">Skor tertinggi: —</p>
             <button type="button" id="quiz-restart-btn"
-              class="inline-flex items-center gap-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-5 py-2.5 transition">
+              class="inline-flex items-center gap-2 rounded-lg bg-violet-700 hover:bg-violet-800 text-white text-sm font-semibold px-5 py-2.5 transition">
               <i class="ti ti-refresh"></i> Main Lagi
             </button>
           </div>
@@ -308,28 +350,43 @@
       </div>
       <p id="expense-edit-error" class="hidden text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 mb-3"></p>
       <form id="expense-edit-form" class="space-y-3">
-        <input type="text" id="expense-edit-title" required placeholder="Judul"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-        <select id="expense-edit-category"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          <option>Makanan</option><option>Transportasi</option><option>Belanja</option>
-          <option>Hiburan</option><option>Kesehatan</option><option>Pendidikan</option>
-          <option>Tagihan</option><option>Lainnya</option>
-        </select>
-        <input type="number" id="expense-edit-amount" min="1" step="1" placeholder="Jumlah (Rp)"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-        <select id="expense-edit-type"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          <option value="Pengeluaran">Pengeluaran</option>
-          <option value="Pemasukan">Pemasukan</option>
-        </select>
-        <input type="date" id="expense-edit-date"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        <div>
+          <label for="expense-edit-title" class="sr-only">Judul transaksi</label>
+          <input type="text" id="expense-edit-title" required placeholder="Judul"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+        <div>
+          <label for="expense-edit-category" class="sr-only">Kategori transaksi</label>
+          <select id="expense-edit-category"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option>Makanan</option><option>Transportasi</option><option>Belanja</option>
+            <option>Hiburan</option><option>Kesehatan</option><option>Pendidikan</option>
+            <option>Tagihan</option><option>Lainnya</option>
+          </select>
+        </div>
+        <div>
+          <label for="expense-edit-amount" class="sr-only">Jumlah</label>
+          <input type="number" id="expense-edit-amount" min="1" step="1" placeholder="Jumlah (Rp)"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
+        <div>
+          <label for="expense-edit-type" class="sr-only">Tipe transaksi</label>
+          <select id="expense-edit-type"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="Pengeluaran">Pengeluaran</option>
+            <option value="Pemasukan">Pemasukan</option>
+          </select>
+        </div>
+        <div>
+          <label for="expense-edit-date" class="sr-only">Tanggal transaksi</label>
+          <input type="date" id="expense-edit-date"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
         <div class="flex justify-end gap-2 pt-1">
           <button type="button" data-close-modal="expense-edit"
             class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
           <button type="submit"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2">
+            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-semibold px-4 py-2">
             <i class="ti ti-device-floppy"></i> Simpan
           </button>
         </div>
@@ -351,19 +408,31 @@
       </div>
       <p id="bookmark-edit-error" class="hidden text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 mb-3"></p>
       <form id="bookmark-edit-form" class="space-y-3">
-        <input type="text" id="bookmark-edit-name" required placeholder="Nama"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
-        <input type="text" id="bookmark-edit-url" required placeholder="https://..."
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
-        <input type="text" id="bookmark-edit-category" placeholder="Kategori"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
-        <input type="text" id="bookmark-edit-note" placeholder="Catatan (opsional)"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        <div>
+          <label for="bookmark-edit-name" class="sr-only">Nama bookmark</label>
+          <input type="text" id="bookmark-edit-name" required placeholder="Nama"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+        <div>
+          <label for="bookmark-edit-url" class="sr-only">URL bookmark</label>
+          <input type="text" id="bookmark-edit-url" required placeholder="https://..."
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+        <div>
+          <label for="bookmark-edit-category" class="sr-only">Kategori bookmark</label>
+          <input type="text" id="bookmark-edit-category" placeholder="Kategori"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+        <div>
+          <label for="bookmark-edit-note" class="sr-only">Catatan bookmark</label>
+          <input type="text" id="bookmark-edit-note" placeholder="Catatan (opsional)"
+            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
         <div class="flex justify-end gap-2 pt-1">
           <button type="button" data-close-modal="bookmark-edit"
             class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
           <button type="submit"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold px-4 py-2">
+            class="inline-flex items-center gap-1.5 rounded-lg bg-sky-700 hover:bg-sky-800 text-white text-sm font-semibold px-4 py-2">
             <i class="ti ti-device-floppy"></i> Simpan
           </button>
         </div>
@@ -388,13 +457,13 @@
         <button type="button" data-close-modal="confirm-delete"
           class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
         <button type="button" id="confirm-delete-btn"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2">
+          class="inline-flex items-center gap-1.5 rounded-lg bg-rose-700 hover:bg-rose-800 text-white text-sm font-semibold px-4 py-2">
           <i class="ti ti-trash"></i> Hapus
         </button>
       </div>
     </div>
   </div>
 
-  <script src="assets/script.js"></script>
+  <script src="assets/script.js" defer></script>
 </body>
 </html>
