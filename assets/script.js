@@ -1,7 +1,8 @@
 /**
  * AturAja — Praktikum 3 PABWE
- * Fitur: Tab switcher, Expense Tracker, Bookmark Manager, Quiz App
- * Semua data persisten memakai localStorage dengan key terpisah per fitur.
+ * Fitur: Tab switcher (via query string ?tab=), Expense Tracker, Bookmark Manager, Quiz App
+ * Data fitur persisten memakai localStorage dengan key terpisah per fitur.
+ * Tab aktif TIDAK disimpan di localStorage — melainkan lewat query string URL.
  */
 
 /* ========== UTILITAS UMUM ========== */
@@ -22,6 +23,15 @@ function formatTanggal(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 }
+
+/* Ikon inline (SVG) — dipakai untuk elemen yang dibuat lewat JS */
+function svgIcon(paths) {
+  return `<svg class="inline-block" style="width:1em;height:1em;vertical-align:-0.125em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+}
+const ICON_PENCIL = svgIcon('<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>');
+const ICON_TRASH = svgIcon('<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>');
+const ICON_ARROW_RIGHT = svgIcon('<path d="M5 12h14"/><path d="M13 5l7 7-7 7"/>');
+const ICON_FLAG = svgIcon('<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22V15"/>');
 
 /* ========== MODAL HELPERS (dipakai semua fitur) ========== */
 
@@ -69,19 +79,42 @@ confirmDeleteBtn.addEventListener("click", () => {
   closeModal(modalConfirmDelete);
 });
 
-/* ========== TAB SWITCHER ========== */
+/* ========================================================
+   TAB SWITCHER — berbasis query string ?tab=expense|bookmark|quiz
+   ======================================================== */
 
-const TAB_STORAGE_KEY = "pabwe-p3-active-tab";
+const VALID_TABS = ["expense", "bookmark", "quiz"];
 const tabButtons = $all(".tab-btn");
-const tabListEl = document.querySelector('[role="tablist"]');
 const panels = {
   expense: $("#panel-expense"),
   bookmark: $("#panel-bookmark"),
   quiz: $("#panel-quiz"),
 };
+const TAB_ACTIVE_BG = { expense: "bg-emerald-700", bookmark: "bg-sky-700", quiz: "bg-violet-700" };
+const TAB_TITLES = {
+  expense: "AturAja — Catatan Pengeluaran Harian",
+  bookmark: "AturAja — Bookmark Manager",
+  quiz: "AturAja — Kuis Interaktif",
+};
 
-function switchTab(name) {
-  if (!panels[name]) name = "expense";
+/** Baca tab aktif dari query string URL (?tab=...). Default: expense. */
+function getTabFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get("tab");
+  return VALID_TABS.includes(tab) ? tab : "expense";
+}
+
+/** Tulis tab aktif ke query string URL tanpa reload halaman */
+function setTabInUrl(name) {
+  const params = new URLSearchParams(window.location.search);
+  params.set("tab", name);
+  const newUrl = `${window.location.pathname}?${params.toString()}`;
+  history.replaceState(null, "", newUrl);
+}
+
+/** Ganti tab aktif: sembunyikan panel lain, highlight tombol, atur ARIA, update query string */
+function switchTab(name, updateUrl = true) {
+  if (!VALID_TABS.includes(name)) name = "expense";
 
   Object.entries(panels).forEach(([key, panel]) => {
     panel.classList.toggle("hidden", key !== name);
@@ -91,33 +124,24 @@ function switchTab(name) {
     const active = btn.dataset.tab === name;
     btn.setAttribute("aria-selected", String(active));
     btn.setAttribute("tabindex", active ? "0" : "-1");
-    btn.classList.toggle("bg-emerald-700", active && name === "expense");
-    btn.classList.toggle("bg-sky-700", active && name === "bookmark");
-    btn.classList.toggle("bg-violet-700", active && name === "quiz");
+    Object.values(TAB_ACTIVE_BG).forEach((cls) => btn.classList.remove(cls));
+    if (active) btn.classList.add(TAB_ACTIVE_BG[name]);
     btn.classList.toggle("text-white", active);
     btn.classList.toggle("shadow", active);
     btn.classList.toggle("text-slate-600", !active);
     btn.classList.toggle("hover:bg-slate-100", !active);
   });
 
-  localStorage.setItem(TAB_STORAGE_KEY, name);
+  document.title = TAB_TITLES[name] || document.title;
+  if (updateUrl) setTabInUrl(name);
 }
 
 tabButtons.forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
 });
 
-// Navigasi tab pakai panah kiri/kanan (praktik ARIA Tabs yang direkomendasikan)
-tabListEl.addEventListener("keydown", (e) => {
-  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
-  const list = [...tabButtons];
-  const currentIndex = list.findIndex((b) => b.getAttribute("aria-selected") === "true");
-  const step = e.key === "ArrowRight" ? 1 : -1;
-  const nextIndex = (currentIndex + step + list.length) % list.length;
-  e.preventDefault();
-  switchTab(list[nextIndex].dataset.tab);
-  list[nextIndex].focus();
-});
+// Dukungan tombol back/forward browser (mengubah riwayat query string)
+window.addEventListener("popstate", () => switchTab(getTabFromUrl(), false));
 
 /* ================================================================
    FITUR 1: EXPENSE TRACKER (Catatan Pengeluaran Harian)
@@ -281,13 +305,15 @@ function renderExpenses() {
     const editBtn = document.createElement("button");
     editBtn.type = "button";
     editBtn.className = "inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50";
-    editBtn.innerHTML = '<i class="ti ti-pencil"></i> Ubah';
+    editBtn.innerHTML = `${ICON_PENCIL} Ubah`;
+    editBtn.setAttribute("aria-label", `Ubah transaksi ${tx.title}`);
     editBtn.addEventListener("click", () => openExpenseEditModal(tx.id));
 
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.className = "inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50";
-    deleteBtn.innerHTML = '<i class="ti ti-trash"></i> Hapus';
+    deleteBtn.innerHTML = `${ICON_TRASH} Hapus`;
+    deleteBtn.setAttribute("aria-label", `Hapus transaksi ${tx.title}`);
     deleteBtn.addEventListener("click", () => {
       askDeleteConfirm(`Yakin ingin menghapus transaksi "${tx.title}"?`, () => {
         expenses = expenses.filter((e) => e.id !== tx.id);
@@ -337,6 +363,7 @@ expenseForm.addEventListener("submit", (e) => {
 
   saveExpenses();
   expenseForm.reset();
+  expenseDateInput.value = new Date().toISOString().slice(0, 10);
   renderExpenses();
   updateExpenseSummary();
 });
@@ -391,7 +418,6 @@ expenseEditForm.addEventListener("submit", (e) => {
   el.addEventListener("change", renderExpenses);
 });
 
-// Default tanggal = hari ini, biar mempercepat input
 expenseDateInput.value = new Date().toISOString().slice(0, 10);
 
 renderExpenses();
@@ -527,13 +553,15 @@ function renderBookmarks() {
     const editBtn = document.createElement("button");
     editBtn.type = "button";
     editBtn.className = "inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50";
-    editBtn.innerHTML = '<i class="ti ti-pencil"></i> Ubah';
+    editBtn.innerHTML = `${ICON_PENCIL} Ubah`;
+    editBtn.setAttribute("aria-label", `Ubah bookmark ${bm.name}`);
     editBtn.addEventListener("click", () => openBookmarkEditModal(bm.id));
 
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
     deleteBtn.className = "inline-flex items-center gap-1 rounded-lg border border-rose-200 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50";
-    deleteBtn.innerHTML = '<i class="ti ti-trash"></i> Hapus';
+    deleteBtn.innerHTML = `${ICON_TRASH} Hapus`;
+    deleteBtn.setAttribute("aria-label", `Hapus bookmark ${bm.name}`);
     deleteBtn.addEventListener("click", () => {
       askDeleteConfirm(`Yakin ingin menghapus bookmark "${bm.name}"?`, () => {
         bookmarks = bookmarks.filter((b) => b.id !== bm.id);
@@ -753,11 +781,11 @@ function handleQuizAnswer(selectedIndex) {
   quizFeedback.textContent = isCorrect ? "Benar!" : `Kurang tepat. Jawaban yang benar: "${q.options[q.correctIndex]}"`;
 
   quizScoreLive.textContent = `Skor: ${quizScore}`;
-  quizNextBtn.textContent = quizIndex === QUIZ_QUESTIONS.length - 1 ? "" : "";
-  quizNextBtn.innerHTML =
-    quizIndex === QUIZ_QUESTIONS.length - 1
-      ? '<i class="ti ti-flag"></i> Lihat Hasil'
-      : 'Lanjut <i class="ti ti-arrow-right"></i>';
+
+  const isLastQuestion = quizIndex === QUIZ_QUESTIONS.length - 1;
+  quizNextBtn.innerHTML = isLastQuestion
+    ? `${ICON_FLAG} Lihat Hasil`
+    : `Lanjut ${ICON_ARROW_RIGHT}`;
   quizNextBtn.classList.remove("hidden");
 }
 
@@ -792,11 +820,5 @@ quizRestartBtn.addEventListener("click", () => showQuizScreen("start"));
 showQuizHighscore();
 showQuizScreen("start");
 
-/* ========== INISIALISASI TAB TERAKHIR ========== */
-// Baca query string ?tab= dulu (dipakai grader untuk audit tiap panel),
-// fallback ke tab terakhir yang tersimpan di localStorage
-const urlParams = new URLSearchParams(window.location.search);
-const tabFromQuery = urlParams.get("tab");
-const initialTab =
-  tabFromQuery && panels[tabFromQuery] ? tabFromQuery : (localStorage.getItem(TAB_STORAGE_KEY) || "expense");
-switchTab(initialTab);
+/* ========== INISIALISASI TAB AWAL (dari query string URL) ========== */
+switchTab(getTabFromUrl(), false);
